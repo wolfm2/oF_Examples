@@ -29,6 +29,31 @@
 
 #include "ofMain.h"
 
+class agent {
+	public:
+		agent();
+		void update();
+		void draw();
+		void set(float X, float Y);
+		void setDest(float X, float Y);
+	private:
+		float calcAlignment();
+		void calcCohesion();
+		void calcDispersion();
+		void initAgentVectors();
+		
+		// member variables we need
+		ofVec2f agentVect;	// where we are
+  		ofVec2f endpoint;	// where we are going to
+
+  		ofVec2f p1;	// triangle pointing up at origin
+  		ofVec2f p2;
+  		ofVec2f p3;
+
+  		float prevAngle = 0;	// last angle we rotated to
+};
+
+
 class ofApp : public ofBaseApp{
 
 	public:
@@ -46,4 +71,3 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 };
-

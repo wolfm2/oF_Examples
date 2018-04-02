@@ -30,6 +30,77 @@
 #include <iostream>
 using namespace std;
 
+agent::agent(){
+  agentVect.set(-1,-1);	// init start location of agent (hidden from view)
+  endpoint.set(0,0);	// where we are going to
+  
+  initAgentVectors();
+}
+
+// reset vectors back to origin and pointing up
+void agent::initAgentVectors(){
+  p1.set(6.25,  0);	// triangle pointing up at origin
+  p2.set(0, -25);
+  p3.set(-6.25,  0);
+}
+
+void agent::update(){
+  ofVec2f middle;
+  
+  float angle = calcAlignment(); // angle needed to point at dest
+  
+  initAgentVectors();
+  
+  p1 += agentVect;  // move to current location 
+  p2 += agentVect;
+  p3 += agentVect;
+  
+  ofVec2f vArr[] = {p1,p2,p3};
+  middle.average(vArr, 3);  // middle of our triangle
+  
+  p1.rotate(angle, middle); // rotate all vectors relative to midpoint
+  p2.rotate(angle, middle);
+  p3.rotate(angle, middle);
+  
+  // agentVect += (endpoint - p2) * .1;
+}
+
+void agent::draw(){
+  ofVec2f offscreen(-1,-1); 
+  if (agentVect != offscreen) {  // if not offscreen, draw it
+    ofDrawTriangle(p1, p2, p3);
+  }
+}
+
+void agent::set(float X, float Y){
+  agentVect.set(X,Y);	// init start location of agent
+}
+
+void agent::setDest(float X, float Y){
+  endpoint.set(X,Y);	// init end location of agent
+}
+
+float agent::calcAlignment(){
+  ofVec2f top(0,-1);				// top of origin used as control
+  
+  float angle = top.angle(endpoint - agentVect);	// put at origin - get angle from control
+  if (angle < 0)				// because it goes from (-180 - 180) rather than (0 - 360)
+    angle = 360 + angle;
+    
+  return (angle);
+}
+
+void agent::calcCohesion(){
+}
+
+void agent::calcDispersion(){
+}
+
+#define MAX_AGENTS 100		// how many agents we can have max
+agent Agents[MAX_AGENTS];	// storage (memory) space for all the unique details of every agent
+int curAgent = 0;			// what agent we are dealing with
+
+
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofSetWindowShape(1024,768);
@@ -44,55 +115,25 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+
+  for (int i=0; i < MAX_AGENTS; i++) {
+    Agents[i].setDest(mouseX, mouseY);
+    Agents[i].update();
+  }
 }
-
-int rotation = 0;
-float angle = 0;
-ofVec2f v1(0,0);
-ofVec2f v2(0,0);  // mouse
-ofVec2f delta(0,0);
-
-ofVec2f p1(6.25,  0);
-ofVec2f p2(0, -25);
-ofVec2f p3(-6.25,  0);
-
-float prevAngle = 0;
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-     int alpha = 150;
-     
-     // take dist between mouse and tip of triangle and move a fraction of that
-     delta = (v2 - p2) * .1; // move all relative to same point.
-     p1 += delta;
-     p2 += delta;
-     p3 += delta;
-     
-     
-     ofVec2f vArr[] = {p1,p2,p3};
-     
-            ofColor aqua(0, 252, 255, alpha);
-            ofColor purple(198, 0, 205, alpha);
-            ofColor inbetween = aqua.getLerped(purple, ofRandom(1.0));
-            ofSetColor(inbetween);
 
-	    v1.average(vArr, 3);  // git middle of triangle
-	    
-	    // ANGLE ROTATION
-	    // undo last rotation
-	    p1.rotate(prevAngle * -1, v1);  
-     	    p2.rotate(prevAngle * -1, v1);
-            p3.rotate(prevAngle * -1, v1);
-	    
-	    // rotate to new mouse coords
-	    // angle set by mouseMoved()
-	    p1.rotate(angle, v1);  // rotate this vector around its middle (v1) towards the mouse
-     	    p2.rotate(angle, v1);
-            p3.rotate(angle, v1);
-	    prevAngle = angle;  // save the old one
+	int alpha = 150;
+	ofColor orange(255, 125, 0, alpha);
+	ofColor purple(198, 0, 205, alpha);
+	ofColor inbetween = orange.getLerped(purple, ofRandom(1.0));
+	ofSetColor(inbetween);
 
-	    
-            ofDrawTriangle(p1, p2, p3); // draw new mouse
+  for (int i=0; i < MAX_AGENTS; i++) {
+    Agents[i].draw();
+  }
 }
 
 //--------------------------------------------------------------
@@ -106,17 +147,7 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-  v2.set(x,y);				// mouse
-  
-  // get angle to point at
-/*
-  ofVec2f right(0,-1);  // point up
-  
-  angle = right.angle(v2-v1);		// put at origin - get angle from control
-  if (angle < 0)
-    angle = 360 + angle;
-  //cout << x << " " << y << " angle: " << angle << "\n";
-*/
+
 }
 
 //--------------------------------------------------------------
@@ -126,6 +157,13 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
+
+    Agents[curAgent].set(mouseX, mouseY);
+    curAgent++;
+    if (curAgent >= MAX_AGENTS) {  // make sure it does not go over
+      curAgent = 0;
+    }
+    
 }
 
 //--------------------------------------------------------------
